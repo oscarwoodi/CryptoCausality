@@ -13,4 +13,31 @@
 * preso_etc - for evolving presentations (also on Echios download area)
 * python - some old python code which can be hacked to get some useful items
 * risk_mag - articles downloaded from Risk Mag during their recent open access period
-* sel_side_rsrch - vetted sell-side articles, some for case studies
+* sell_side_rsrch - vetted sell-side articles, some for case studies
+
+
+### Few References:
+* [Algo Trading Books](https://docs.google.com/spreadsheets/d/1fk0csVKeT_xSln1axRhBp5u_cgz-erNAXYZKYgI8xtk/edit?gid=1400952301#gid=1400952301)
+
+### Reference Python Libraries:``
+* [Pandas](https://pandas.pydata.org/)
+* [Numpy](https://numpy.org/)
+* [Scipy](https://www.scipy.org/)
+* [Matplotlib](https://matplotlib.org/)
+* [Seaborn](https://seaborn.pydata.org/)
+* [Statsmodels](https://www.statsmodels.org/stable/index.html)
+* [Scikit-learn](https://scikit-learn.org/stable/)
+* [Tensorflow](https://www.tensorflow.org/)
+* [Pytorch](https://pytorch.org/)
+
+
+### Data Sources:
+* [Histdata](https://www.histdata.com/)
+* [Quandl](https://www.quandl.com/)
+* [Yahoo Finance](https://finance.yahoo.com/)
+* [Data Bento](https://www.databento.com/)
+* [Alpha Vantage](https://www.alphavantage.co/)
+* [Optimus Futures](https://optimusfutures.com/)
+* [TickData](https://www.tickdata.com/)
+
+
