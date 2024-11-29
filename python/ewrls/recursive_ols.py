@@ -216,11 +216,11 @@ def main():
     main [summary]
     '''
     np.random.seed(0)
-    length = 1000
+    length = 100
     k_dim = 5
     X = pd.DataFrame(np.random.randn(length, k_dim))
     y = pd.DataFrame(np.random.randn(length, 1))
-    rls_instance1 = RecursiveOLS(y.iloc[:51, :].values, X.iloc[:51, :].values)
+    # rls_instance1 = RecursiveOLS(y.iloc[:51, :].values, X.iloc[:51, :].values)
     yhat_roll1 = pd.DataFrame(np.zeros((length, 1)))
     betahat_roll1 = pd.DataFrame(np.zeros((length, k_dim)))
     sigma_data = [[n, np.zeros((k_dim, k_dim))] for n in range(length)]
@@ -229,7 +229,7 @@ def main():
     t0_3 = time.time()
 
     # initate - stupid if else: doesn't work below!
-    rls_instance1 = RecursiveOLS(y.iloc[:51, :].values, X.iloc[:51, :].values)
+    rls_instance1 = RecursiveOLS(y.iloc[:21, :].values, X.iloc[:21, :].values)
     beta_h = rls_instance1.beta
 
     betahat_roll1.iloc[51, :] = beta_h.T
@@ -248,6 +248,7 @@ def main():
         # _run_update only with last values
 
         betahat_roll1.iloc[t + 1, :] = beta_h.T
+        print(beta_h)
         # sigma2hat1.iloc[t+1,0] = p
         # create forecast and make scalar
         x_new = X.iloc[

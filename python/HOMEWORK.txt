@@ -1,0 +1,24 @@
+# Assigmnent - Do monday. Due Monday
+-------
+## Main Assignment - Rich/Cheap analysis for Crude Oil Futures. Curve Trades
+
+1. CL1, CL2, ...CLN	Find underlying commodity Future CLH9, CLM4, CUR_GEN_
+2. FOR CLH9, CLM4	
+3. Find time to maturity for each contract (let's use CUR_)	
+4. Find interpolants – and choose 1m, 2m, 3m, etc pointson curve	
+	1. Use simple piecewise constant interpolants
+	2. Use some other parametric form
+
+5. do PCA for the points on the curve	
+6. Find Rich/Cheap Signals for each futures contract	
+7. analyse the properties of the r/c signals...is it mean-reverting? 	
+8. Is “fair value” zero?	
+9. What is the reversion speed?
+10. Can we find spread or butterfly trades which are mean-reverting? 
+
+-----
+## **Extra credit** - Consider Nelson-Siegel of some other parametric form for the curve
+	1  consider r/c signals from the curve
+	2. Consider aging of contacts along curve
+	3. "Forecast" the CL contract price change from carry/roll and reversion to curve
+	4. Consider the curve itself. Does it evolve? Can we forecast it? Maybe using similar methods?
