@@ -4,8 +4,9 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Tuple, Optional
 from .granger_causality import GrangerCausalityAnalyzer
-from statsmodels.stats.correlation_tools import corr_clust
+# from statsmodels.stats.correlation_tools import corr_clust
 from statsmodels.stats.diagnostic import acorr_ljungbox
+from scipy.cluster.hierarchy import linkage, fcluster
 import networkx as nx
 import logging
 
@@ -58,8 +59,9 @@ class CausalityAnalyzer:
         # Calculate correlation matrix
         corr_matrix = self.data.corr()
         
-        # Perform correlation clustering
-        clustering = corr_clust(corr_matrix.values)
+        # Perform correlation clustering using hierarchical clustering
+        Z = linkage(corr_matrix.values, method='ward')
+        clustering = fcluster(Z, t=1.15, criterion='distance')
         
         # Create DataFrame with results
         clusters = pd.DataFrame(
