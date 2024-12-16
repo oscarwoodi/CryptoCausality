@@ -43,6 +43,7 @@ __pycache__/
 ########################
 env/
 venv/
+virtualenv/
 ENV/
 ENV.bak/
 venv.bak/
