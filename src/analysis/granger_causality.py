@@ -79,7 +79,7 @@ class AutomatedGrangerAnalyzer:
         self,
         cause: str,
         effect: str,
-        max_lags: int = 10
+        max_lags: int = 50
     ) -> Tuple[Dict, int]:
         """Test Granger causality between a pair of cryptocurrencies."""
         logger.info(f"Testing causality: {cause} -> {effect}")
@@ -95,7 +95,7 @@ class AutomatedGrangerAnalyzer:
             # Find optimal lag order using AIC
             model = VAR(pair_data)
             results = model.select_order(maxlags=max_lags)
-            optimal_lag = results.aic.argmin() + 1
+            optimal_lag = results.selected_orders['aic']
             logger.info(f"Optimal lag order: {optimal_lag}")
             
             # Run Granger causality test
@@ -152,6 +152,59 @@ class AutomatedGrangerAnalyzer:
         
         logger.info(f"Analysis completed. Found {len(results)} valid results.")
         return pd.DataFrame(results)
+    
+    def run_multivariate_causality(
+        self, target: str, max_lag: Optional[int] = None
+    ) -> Tuple[Dict[str, float], Dict[str, List[float]], int]:
+        """
+        Run multivariate Granger causality analysis using VAR model.
+
+        Args:
+            target: Target cryptocurrency to test causality for
+            max_lag: Maximum lag order for VAR model (default: None, uses AIC)
+
+        Returns:
+            Tuple containing:
+            - Dictionary of test statistics for each variable
+            - Dictionary of coefficient p-values for each variable
+            - Optimal lag order
+        """
+        # Prepare data
+        data = self.data.copy()
+
+        # Determine optimal lag order if not specified
+        if max_lag is None:
+            model = VAR(data)
+            max_lag = model.select_order(maxlags=self.max_lags).aic
+
+        # Fit VAR model
+        model = VAR(data)
+        results = model.fit(maxlags=max_lag)
+
+        # Get test statistics and p-values for target variable
+        target_idx = list(data.columns).index(target)
+
+        # Extract coefficients and p-values for each variable
+        coef_pvals = {}
+        test_stats = {}
+
+        for i, col in enumerate(data.columns):
+            if col != target:
+                # Get coefficients for this variable
+                coefs = []
+                pvals = []
+                for lag in range(max_lag):
+                    coef_idx = i + lag * len(data.columns)
+                    coefs.append(results.params[coef_idx][target_idx])
+                    pvals.append(results.pvalues[coef_idx][target_idx])
+
+                coef_pvals[col] = pvals
+                # Use F-test or Chi-square test statistic
+                test_stats[col] = results.test_causality(
+                    target, [col], kind="f"
+                ).test_statistic
+
+        return test_stats, coef_pvals, max_lag
 
 
 class GrangerCausalityAnalyzer:
@@ -165,7 +218,7 @@ class GrangerCausalityAnalyzer:
     """
 
     def __init__(
-        self, data: pd.DataFrame, max_lags: int = 10, test_type: str = "ssr_chi2test"
+        self, data: pd.DataFrame, max_lags: int = 15, test_type: str = "ssr_chi2test"
     ):
         """
         Initialize the GrangerCausalityAnalyzer.
