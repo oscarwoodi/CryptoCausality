@@ -4,7 +4,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 import os
 import logging
-from src.data.processor import DataProcessor
+from src.data.data_processor import DataProcessor
 from src.analysis.causality import CausalityAnalyzer
 from src.analysis.outliers import OutlierAnalyzer
 from src.analysis.stationarity import StationarityTester
@@ -90,7 +90,10 @@ def main():
     causality_results, causality_metrics = run_causality_analysis(data)
     
     # Save results if needed
-    # ... (add code to save results)
+    # stationarity_results.to_csv("stationarity_results.csv")
+    # outlier_results.to_csv("outlier_results.csv")
+    # causality_results.to_csv("causality_results.csv")
+    # causality_metrics.to_csv("causality_metrics.csv")
 
 if __name__ == "__main__":
     main()

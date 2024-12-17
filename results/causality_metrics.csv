@@ -1,0 +1,7 @@
+,out_degree,in_degree,betweenness,pagerank,is_causal_hub,is_effect_hub
+ADAUSDT,5,5,0.0,0.17716162786258854,False,False
+BNBUSDT,5,5,0.0,0.13074578171001422,False,False
+BTCUSDT,5,5,0.0,0.16362566947109447,False,False
+DOGEUSDT,5,5,0.0,0.1563779538014142,False,False
+ETHUSDT,5,5,0.0,0.13812155190857237,False,False
+XRPUSDT,5,5,0.0,0.23396741524631604,False,False
