@@ -7,6 +7,7 @@ from .granger_causality import GrangerCausalityAnalyzer
 # from statsmodels.stats.correlation_tools import corr_clust
 from statsmodels.stats.diagnostic import acorr_ljungbox
 from scipy.cluster.hierarchy import linkage, fcluster
+from scipy.spatial.distance import squareform
 import networkx as nx
 import logging
 
@@ -58,19 +59,25 @@ class CausalityAnalyzer:
         """Analyze correlation structure using hierarchical clustering."""
         # Calculate correlation matrix
         corr_matrix = self.data.corr()
-        
-        # Perform correlation clustering using hierarchical clustering
-        Z = linkage(corr_matrix.values, method='ward')
-        clustering = fcluster(Z, t=1.15, criterion='distance')
-        
+
+        # Convert correlation matrix to distance matrix
+        dist_matrix = 1 - np.abs(corr_matrix)
+
+        # Perform hierarchical clustering
+        condensed_dist = squareform(dist_matrix)
+        linkage_matrix = linkage(condensed_dist, method='complete')
+
+        # Form clusters
+        clusters = fcluster(linkage_matrix, t=0.5, criterion='distance')
+
         # Create DataFrame with results
-        clusters = pd.DataFrame(
-            clustering,
+        cluster_df = pd.DataFrame(
             index=corr_matrix.index,
-            columns=['cluster', 'p_value']
+            columns=['cluster']
         )
-        
-        return clusters
+        cluster_df['cluster'] = clusters
+
+        return cluster_df
     
     def _analyze_instantaneous_causality(self) -> pd.DataFrame:
         """Analyze instantaneous causality using Ljung-Box test."""

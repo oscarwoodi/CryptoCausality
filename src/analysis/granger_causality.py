@@ -30,20 +30,128 @@ Key features:
 
 """
 
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import pandas as pd
+import pyarrow.parquet as pq
+import numpy as np
+from statsmodels.tsa.api import VAR
+from statsmodels.tsa.stattools import grangercausalitytests
+import glob
+from typing import Dict, Tuple, List
+from src.visualization.causality_viz import CausalityVisualizer
+from statsmodels.tools.eval_measures import aic, rmse
 import logging
+
 from itertools import combinations
 from typing import Dict, List, Optional, Tuple, Union
 
-import numpy as np
-import pandas as pd
-from statsmodels.tools.eval_measures import aic, rmse
-from statsmodels.tsa.api import VAR
-from statsmodels.tsa.stattools import grangercausalitytests
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+
+# Set up logging with more detailed format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
+
+class AutomatedGrangerAnalyzer:
+    def __init__(self, data):
+        """Initialize the AutomatedGrangerAnalyzer."""
+        self.returns_data = data
+        logger.info(f"Loaded data for {len(self.returns_data.columns)} cryptocurrencies")
+        self.visualizer = CausalityVisualizer(significance_level=0.05)
+        self._validate_inputs()
+
+    def _validate_inputs(self) -> None:
+        """Validate input data and parameters."""
+        if not isinstance(self.returns_data, pd.DataFrame):
+            raise TypeError("Data must be a pandas DataFrame")
+
+        if self.returns_data.isnull().any().any():
+            logger.warning("Data contains null values. These will be dropped.")
+            self.returns_data = self.returns_data.dropna()
+
+    def test_pair_causality(
+        self,
+        cause: str,
+        effect: str,
+        max_lags: int = 10
+    ) -> Tuple[Dict, int]:
+        """Test Granger causality between a pair of cryptocurrencies."""
+        logger.info(f"Testing causality: {cause} -> {effect}")
+        
+        try:
+            pair_data = self.returns_data[[cause, effect]].dropna()
+            logger.info(f"Testing pair with {len(pair_data)} observations")
+            
+            if len(pair_data) < max_lags + 2:
+                logger.warning(f"Insufficient data for {cause}->{effect}")
+                return None, None
+            
+            # Find optimal lag order using AIC
+            model = VAR(pair_data)
+            results = model.select_order(maxlags=max_lags)
+            optimal_lag = results.aic.argmin() + 1
+            logger.info(f"Optimal lag order: {optimal_lag}")
+            
+            # Run Granger causality test
+            gc_results = grangercausalitytests(
+                pair_data[[effect, cause]],
+                maxlag=optimal_lag,
+                verbose=False
+            )
+            
+            test_stats = {}
+            for test_type in ['ssr_chi2test', 'ssr_ftest']:
+                test_stats[test_type] = {
+                    'stat': gc_results[optimal_lag][0][test_type][0],
+                    'pvalue': gc_results[optimal_lag][0][test_type][1]
+                }
+                logger.info(f"{test_type} p-value: {test_stats[test_type]['pvalue']:.4f}")
+            
+            return test_stats, optimal_lag
+            
+        except Exception as e:
+            logger.error(f"Error in causality test {cause}->{effect}: {str(e)}")
+            return None, None
+
+    def analyze_all_pairs(
+        self,
+        significance_level: float = 0.05
+    ) -> pd.DataFrame:
+        """Analyze Granger causality for all cryptocurrency pairs."""
+        results = []
+        symbols = self.returns_data.columns
+        total_pairs = len(symbols) * (len(symbols) - 1)
+        logger.info(f"Starting analysis of {total_pairs} pairs")
+        completed = 0
+        
+        for cause in symbols:
+            for effect in symbols:
+                if cause != effect:
+                    completed += 1
+                    logger.info(f"Processing pair {completed}/{total_pairs}: {cause}->{effect}")
+                    
+                    test_stats, opt_lag = self.test_pair_causality(cause, effect)
+                    
+                    if test_stats is not None and opt_lag is not None:
+                        result = {
+                            'cause': cause,
+                            'effect': effect,
+                            'optimal_lag': opt_lag,
+                            'f_stat': test_stats['ssr_ftest']['stat'],
+                            'p_value': test_stats['ssr_ftest']['pvalue'],
+                            'significant': test_stats['ssr_ftest']['pvalue'] < significance_level
+                        }
+                        results.append(result)
+                        logger.info(f"Result: {'Significant' if result['significant'] else 'Not significant'}")
+        
+        logger.info(f"Analysis completed. Found {len(results)} valid results.")
+        return pd.DataFrame(results)
 
 
 class GrangerCausalityAnalyzer:
