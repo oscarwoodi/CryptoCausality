@@ -25,7 +25,6 @@ Key features:
     Flexible test statistic selection
     Configurable significance levels
     Optimal lag selection
-    Type hints for better code clarity
 
 
 """
