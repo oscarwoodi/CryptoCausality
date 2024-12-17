@@ -1,4 +1,5 @@
 # examples/automated_gc.py
+# Oscar, Theo, Jian Wei, Eli
 
 import os
 import sys
