@@ -81,4 +81,26 @@ crypto_analysis/
 9. The examples folders shows how to use the code
 
 
+---
+# Project Goal
+
+1. Determine causality for data using Granger, Multivariate Granger and/or Time-varying Granger Causality
+2. Determine appropriate lags for the data and appropriate causal structure (which causes which?)
+3. Can you find a frequency where causality is more pronounced? Can you find a frequency where causality is less pronounced?
+4. Can you determine if the relationship is stable over time?
+5. Can you determine if it is assymmetric?
+6. Can you use this to predict future prices/returns, etc? 
+7. Develop a trading model based on this information. If it is time-varying, you can use EWRLS or RLS that I provided before.
+8. Please try to provide as many stats as you think good for this trading model.
+9. Note that you are only testing a set of features. A real model will include other sets of features as well.`(e.g., ARMA/Momentum/Mean-reversion + Granger Causality + Sentiment + LOB data etc)
+10. Please write up a Notebook and or a report on your findings. Please link to your code base. Please keep the heavy-lifting outside the Notebook. (make it more readable).
+11. Note that this is meant to show findings, not explorations. You are meant to find some form of working model, no matter what the horizon.
+12. If it isn't working for 1min, you can do 1sec, 1hour, 1day, etc. Binance has it all.
+
+
+---
+## Referencees
+* [BTCUSDT 1 min data including OHLCV](https://data.binance.vision/?prefix=data/spot/daily/klines/BTCUSDT/1m/)
+* klines should have OHLCV data etc [Binance Public data](https://github.com/binance/binance-public-data)
+
 
