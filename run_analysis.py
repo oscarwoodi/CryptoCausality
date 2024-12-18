@@ -30,7 +30,7 @@ from src.utils.helpers import calculate_returns
 from src.config import (SYMBOLS, INTERVAL, START_DATE, END_DATE,
                       BASE_URL, RAW_DATA_PATH, PROCESSED_DATA_PATH)
 
-def load_data(logger, data_dir: str = None) -> pd.DataFrame:
+def load_data(logger, data_dir: str = None, interval: str = "1m") -> pd.DataFrame:
     """Initialize analyzer with data directory path."""
     if data_dir is None:
         # Get the path relative to the script location
@@ -61,22 +61,24 @@ def load_data(logger, data_dir: str = None) -> pd.DataFrame:
 
     for file in parquet_files:
         symbol = os.path.basename(file).split("_")[0]
+        time = os.path.basename(file).split("_")[1]
         logger.info(f"Processing file for {symbol}")
 
-        try:
-            df = pq.read_table(file).to_pandas()
-            logger.info(f"Loaded {len(df)} rows for {symbol}")
+        if time == interval:
+            try:
+                df = pq.read_table(file).to_pandas()
+                logger.info(f"Loaded {len(df)} rows for {symbol}")
 
-            if "log_returns" not in df.columns:
-                logger.info(f"Calculating log returns for {symbol}")
-                df["log_returns"] = np.log(df["close"]).diff()
+                if "log_returns" not in df.columns:
+                    logger.info(f"Calculating log returns for {symbol}")
+                    df["log_returns"] = np.log(df["close"]).diff()
 
-            all_returns[symbol] = df["log_returns"]
-            logger.info(f"Successfully processed {symbol}")
+                all_returns[symbol] = df["log_returns"]
+                logger.info(f"Successfully processed {symbol}")
 
-        except Exception as e:
-            logger.error(f"Error processing {symbol}: {str(e)}")
-            continue
+            except Exception as e:
+                logger.error(f"Error processing {symbol}: {str(e)}")
+                continue
 
     if not all_returns:
         logger.error("No data was loaded!")
@@ -204,8 +206,8 @@ def run_multiple_granger_causality_analysis(data: pd.DataFrame, target, logger) 
             
         # Run multivariate causality test for BTC
         print(f"\nMultivariate Granger Causality Results for {target}:")
-        test_stats, coef_pvals, opt_lag = analyzer.run_multivariate_causality(target=target)
-        print(f"Optimal lag order: {opt_lag}")
+        test_stats, coef_pvals, max_lag = analyzer.run_multivariate_causality(target=target)
+        print(f"Max lag order: {max_lag}")
         print("\nTest statistics:")
         print(test_stats)
         print("\nCoefficient p-values:")
@@ -257,7 +259,7 @@ def main():
     logger.info("Starting Granger causality analysis")
 
     # Load data
-    data = load_data(logger)
+    data = load_data(logger, interval="1m")
 
     # Run analyses
     # stationary results
