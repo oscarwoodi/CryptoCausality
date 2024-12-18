@@ -241,9 +241,10 @@ def run_tv_granger_causality_analysis(data: pd.DataFrame, logger):
 
     # Run analysis
     window_size = 100 if args.test else 500  # Smaller window for test mode
-    run_tvgc_analysis(data, window_size=window_size, test_mode=args.test)
+    summary = run_tvgc_analysis(data, window_size=window_size, test_mode=args.test)
     
     print("TVGC analysis completed!")
+    return summary
 
 
 def main():
@@ -283,6 +284,9 @@ def main():
     # multiple granger results
     multiple_granger_causality_results = run_multiple_granger_causality_analysis(data, "BTCUSDT", logger)
     multiple_granger_causality_results.to_csv(f"results/{INTERVAL}/multiple_granger_causality_results.csv")
+    # time varying granger results
+    tv_granger_causality_results = run_tv_granger_causality_analysis(data, logger)
+    tv_granger_causality_results.to_csv(f"results/{INTERVAL}/time_varying_granger_causality_results.csv")
 
 
 if __name__ == "__main__":
