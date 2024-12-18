@@ -78,7 +78,7 @@ class AutomatedGrangerAnalyzer:
         self,
         cause: str,
         effect: str,
-        max_lags: int = 50
+        max_lags: int = 100
     ) -> Tuple[Dict, int]:
         """Test Granger causality between a pair of cryptocurrencies."""
         logger.info(f"Testing causality: {cause} -> {effect}")
@@ -86,7 +86,6 @@ class AutomatedGrangerAnalyzer:
         try:
             pair_data = self.returns_data[[cause, effect]].dropna()
             logger.info(f"Testing pair with {len(pair_data)} observations")
-            
             if len(pair_data) < max_lags + 2:
                 logger.warning(f"Insufficient data for {cause}->{effect}")
                 return None, None
@@ -95,6 +94,7 @@ class AutomatedGrangerAnalyzer:
             model = VAR(pair_data)
             results = model.select_order(maxlags=max_lags)
             optimal_lag = results.selected_orders['aic']
+            print(f"Optimal lag order: {optimal_lag}")
             logger.info(f"Optimal lag order: {optimal_lag}")
             
             # Run Granger causality test

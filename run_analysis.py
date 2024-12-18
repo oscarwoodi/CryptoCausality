@@ -243,22 +243,24 @@ def main():
 
     # Run analyses
     # stationarity_results = run_stationarity_analysis(data, logger)
-    # outlier_results = run_outlier_analysis(data, logger)
-    causality_results, causality_metrics = run_causality_analysis(data, logger)
-    # granger_causality_results, granger_causality_results_summary = run_granger_causality_analysis(data, logger)
-    # multiple_granger_causality_results = run_multiple_granger_causality_analysis(data, "BTCUSDT", logger)
-
-    # save results if needed
     # stationarity_results.to_csv(f"results/{INTERVAL}/stationarity_results.csv")
+    
+    # outlier_results = run_outlier_analysis(data, logger)
     # outlier_results.to_csv(f"results/{INTERVAL}/outlier_results.csv")
+    
+    # causality_results, causality_metrics = run_causality_analysis(data, logger)
     # causality_results["granger"].to_csv(f"results/{INTERVAL}/grangerv1_causality_results.csv")
     # causality_results["correlation"].to_csv(f"results/{INTERVAL}/correlation_causality_results.csv")
-    causality_results["instantaneous"].to_csv(
-        f"results/{INTERVAL}/instantaneous_causality_results.csv"
-    )
-    causality_metrics.to_csv(f"results/{INTERVAL}/causality_metrics.csv")
-    # granger_causality_results.to_csv(f"results/{INTERVAL}/grangerv2_causality_results.csv")
+    # causality_results["instantaneous"].to_csv(
+    #     f"results/{INTERVAL}/instantaneous_causality_results.csv"
+    # )
+    # causality_metrics.to_csv(f"results/{INTERVAL}/causality_metrics.csv")
+    
+    granger_causality_results, granger_causality_results_summary = run_granger_causality_analysis(data, logger)
+    granger_causality_results.to_csv(f"results/{INTERVAL}/grangerv2_causality_results.csv")
     # granger_causality_results_summary.to_csv(f"results/{INTERVAL}/grangerv2_causality_metrics.csv")
+    
+    # multiple_granger_causality_results = run_multiple_granger_causality_analysis(data, "BTCUSDT", logger)
     # multiple_granger_causality_results.to_csv(f"results/{INTERVAL}/multiple_granger_causality_results.csv")
 
 
