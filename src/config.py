@@ -26,7 +26,7 @@ SYMBOLS = ['BTCUSDT',
 
 # Time parameters
 INTERVAL = '1m'  # Data granularity
-START_DATE = '2024-01-01'
+START_DATE = '2024-01-25'
 END_DATE = '2024-02-01'
 
 # API configuration
