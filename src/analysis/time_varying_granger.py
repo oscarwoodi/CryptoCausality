@@ -1,8 +1,10 @@
+from typing import Dict
 import numpy as np
 import pandas as pd
 from statsmodels.regression.linear_model import OLS
 from scipy import stats
 import warnings
+import os
 warnings.filterwarnings('ignore')
 
 def rolling_granger_causality(y, x, max_lag=100, window_size=500):
