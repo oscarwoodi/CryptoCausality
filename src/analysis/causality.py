@@ -129,9 +129,9 @@ class CausalityAnalyzer:
             G.add_edge(
                 row['cause'],
                 row['effect'],
-                weight=-np.log10(row['min_p_value'])  # Edge weight based on p-value
+                weight=-np.log10(min(row['p_value']))  # Edge weight based on p-value
             )
-        
+
         return G
     
     def get_causality_metrics(self) -> pd.DataFrame:
