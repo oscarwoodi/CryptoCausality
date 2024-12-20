@@ -24,10 +24,15 @@ SYMBOLS = ['BTCUSDT',
            'DOGEUSDT'
            ]
 
+# SYMBOLS = ['BTCUSDT',
+#            'ETHUSDT',
+#            'BNBUSDT',
+#            ]
+
 # Time parameters
 INTERVAL = '1m'  # Data granularity
-START_DATE = '2024-01-25'
-END_DATE = '2024-02-01'
+START_DATE = '2024-12-08'
+END_DATE = '2024-12-18'
 
 # API configuration
 BASE_URL = 'https://api.binance.com'

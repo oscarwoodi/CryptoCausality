@@ -7,9 +7,12 @@ import logging
 from itertools import combinations
 import statsmodels.api as sm
 from statsmodels.tsa.api import VAR
-import matplotlib.pyplot as plta
+import matplotlib.pyplot as plt
 import os
 warnings.filterwarnings('ignore')
+
+from src.config import (SYMBOLS, INTERVAL, START_DATE, END_DATE,
+                      BASE_URL, RAW_DATA_PATH, PROCESSED_DATA_PATH)
 
 # Set up logging with more detailed format
 logging.basicConfig(
@@ -45,6 +48,9 @@ def rolling_granger_causality(y, x, max_lag=100, window_size=500):
     # Initialize results storage
     results = []
     dates = []
+
+    # Find optimal lag order using AIC
+    # join two series
     
     # Create lagged versions of both series
     y_lags = pd.DataFrame({f'y_lag_{i}': y.shift(i) for i in range(1, max_lag + 1)})
@@ -108,12 +114,6 @@ def analyze_tvgc(crypto_data, pairs_to_test, window_size=500, test_mode=True, ma
         returns1 = crypto_data[symbol1]
         returns2 = crypto_data[symbol2]
 
-        # Find optimal lag order using AIC
-        pair_data = crypto_data[[symbol1, symbol2]]
-        model = VAR(pair_data)
-        optimal_lag = model.select_order(maxlags=max_lags).aic
-        logger.info(f"Optimal lag order: {optimal_lag}")
-        
         if test_mode:
             returns1 = returns1[:1000]  # Only use first 1000 points for testing
             returns2 = returns2[:1000]
@@ -124,7 +124,7 @@ def analyze_tvgc(crypto_data, pairs_to_test, window_size=500, test_mode=True, ma
             returns2.dropna(), 
             returns1.dropna(),
             window_size=window_size,
-            max_lag=optimal_lag
+            max_lag=max_lags
         )
         completed += 1
         logger.info(f"Forward causality complete. Initial p-value: {forward_results['p_value'].iloc[0]:.4f}")
@@ -134,7 +134,7 @@ def analyze_tvgc(crypto_data, pairs_to_test, window_size=500, test_mode=True, ma
             returns1.dropna(),
             returns2.dropna(),
             window_size=window_size,
-            max_lag=optimal_lag
+            max_lag=max_lags
         )
         completed += 1
         logger.info(f"Backward causality complete. Initial p-value: {backward_results['p_value'].iloc[0]:.4f}")
@@ -149,7 +149,7 @@ def analyze_tvgc(crypto_data, pairs_to_test, window_size=500, test_mode=True, ma
         
     return tvgc_results
 
-def run_tvgc_analysis(data: dict[str, pd.DataFrame], window_size: int = 500, test_mode: bool = False) -> None:
+def run_tvgc_analysis(data: dict[str, pd.DataFrame], window_size: int = 300, test_mode: bool = False) -> None:
     """Run time-varying Granger causality analysis."""
     # Get all pairs of cryptocurrencies
     symbols = list(data.keys())
@@ -158,25 +158,23 @@ def run_tvgc_analysis(data: dict[str, pd.DataFrame], window_size: int = 500, tes
     logger.info(f"Analyzing {len(pairs)} cryptocurrency pairs...")
     
     # Run TVGC analysis
-    tvgc_results = analyze_tvgc(data, pairs, window_size=window_size, test_mode=test_mode, max_lags=100)
+    tvgc_results = analyze_tvgc(data, pairs, window_size=window_size, test_mode=test_mode, max_lags=20)
     
     # Create output directory if it doesn't exist
-    output_dir = "./results/plots"
+    output_dir = f"./results/{INTERVAL}/plots"
 
     # Plot result
     logger.info("Plotting TVGC results...")
     plt.figure(figsize=(15, 10))
-    plot_tvgc_results(tvgc_results, "Time-Varying Granger Causality Analysis")
-    plt.savefig(os.path.join(output_dir, "tvgc_results.png"))
-    plt.close()
+    plot_tvgc_results(tvgc_results, "Time-Varying Granger Causality Analysis", output_dir)
     
     # Generate and save summary statistics
     print("Generating summary statistics...")
     summary = summarize_tvgc_results(tvgc_results)
     
-    return summary
+    return summary, tvgc_results
 
-def plot_tvgc_results(tvgc_results, title="Time-Varying Granger Causality Results"):
+def plot_tvgc_results(tvgc_results, title="Time-Varying Granger Causality Results", output_dir="./results/plots"):
     """
     Plot the time-varying Granger causality results
     
@@ -187,30 +185,35 @@ def plot_tvgc_results(tvgc_results, title="Time-Varying Granger Causality Result
     title : str
         Title for the plot
     """
-    plt.figure(figsize=(15, 10))
+    
     
     for pair, results in tvgc_results.items():
+        fig, ax = plt.subplots(figsize=(15, 10))
+
         # Plot significance regions
-        plt.fill_between(results['date'], 
-                        0, 
-                        1, 
-                        where=results['significant'],
-                        alpha=0.3,
-                        label=f"{pair} (significant regions)")
+        ax.fill_between(results['date'], 
+                0, 
+                1, 
+                where=results['significant'],
+                alpha=0.3,
+                label=f"{pair} (significant regions)")
         
         # Plot p-values
-        plt.plot(results['date'], 
-                results['p_value'], 
-                label=f"{pair} (p-value)",
-                alpha=0.7)
-    
-    plt.axhline(y=0.05, color='r', linestyle='--', label='5% significance level')
-    plt.title(title)
-    plt.xlabel('Time')
-    plt.ylabel('P-value')
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
-    plt.show()
+        ax.plot(results['date'], 
+            results['p_value'], 
+            label=f"{pair} (p-value)",
+            alpha=0.7)
+        
+        ax.axhline(y=0.05, color='r', linestyle='--', label='5% significance level')
+        ax.set_title(title)
+        ax.set_xlabel('Time')
+        ax.set_ylabel('P-value')
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        fig.tight_layout()
+        
+        # save figure
+        fig.savefig(os.path.join(output_dir, f"tvgc_results_{'_'.join(pair.split('->'))}.png"))
+        plt.close(fig)
 
 # Calculate summary statistics for TVGC results
 def summarize_tvgc_results(tvgc_results):

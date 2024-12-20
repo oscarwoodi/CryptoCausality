@@ -165,8 +165,8 @@ def run_granger_causality_analysis(data: pd.DataFrame, logger) -> None:
                 for _, row in significant_results.iterrows():
                     print(f"\n{row['cause']} -> {row['effect']}")
                     print(f"  Optimal lag: {row['optimal_lag']}")
-                    print(f"  F-statistic: {row['stat']:.4f}")
-                    print(f"  P-value: {row['p_value']:.4f}")
+                    print(f"  F-statistic: {row['stat']}")
+                    print(f"  P-value: {row['p_value']}")
 
             else:
                 print("\nNo significant Granger causality relationships found.")
@@ -195,32 +195,36 @@ def run_granger_causality_analysis(data: pd.DataFrame, logger) -> None:
     return results, summary
 
 
-def run_multiple_granger_causality_analysis(data: pd.DataFrame, target, logger) -> None:
+def run_multiple_granger_causality_analysis(data: pd.DataFrame, logger) -> None:
 
     try: 
-        # Initialize analyzer
-        analyzer = AutomatedGrangerAnalyzer(data)
+        results = {}
+        for target in data.columns: 
+            # Initialize analyzer
+            analyzer = AutomatedGrangerAnalyzer(data)
 
-        # Run analysis
-        logger.info("Running multiple var granger causality tests...")
-        # Run multivariate causality test for BTC
-        test_stats, coef_pvals, opt_lag = analyzer.run_multivariate_causality(target=target)
+            # Run analysis
+            logger.info("Running multiple var granger causality tests...")
+            # Run multivariate causality test for BTC
+            test_stats, coef_pvals, opt_lag = analyzer.run_multivariate_causality(target=target)
 
-        # put test_stats, coef_pvals, opt_lag into a dataframe
-        summary_stats = pd.DataFrame(
-            {
-                "test_statistic": test_stats,
-                "coefficient_p_value": coef_pvals,
-                "optimal_lag": opt_lag,
-            },
-            index=data.columns,
-        )
+            # put test_stats, coef_pvals, opt_lag into a dataframe
+            summary_stats = pd.DataFrame(
+                {
+                    "test_statistic": test_stats,
+                    "coefficient_p_value": coef_pvals,
+                    "optimal_lag": opt_lag,
+                },
+                index=data.columns,
+            )
+
+            results[target] = summary_stats
     
     except Exception as e:
         logger.error(f"Error in main analysis: {str(e)}", exc_info=True)
         raise
 
-    return summary_stats
+    return results
 
 
 def run_tv_granger_causality_analysis(data: pd.DataFrame, logger):
@@ -233,11 +237,11 @@ def run_tv_granger_causality_analysis(data: pd.DataFrame, logger):
     args = parser.parse_args()
 
     # Run analysis
-    window_size = 100 if args.test else 500  # Smaller window for test mode
-    summary = run_tvgc_analysis(data, window_size=window_size, test_mode=True)
+    window_size = 300  # Smaller window for test modes
+    summary, results = run_tvgc_analysis(data, window_size=window_size, test_mode=False)
     
     print("TVGC analysis completed!")
-    return summary
+    return summary, results
 
 
 def main():
@@ -256,7 +260,7 @@ def main():
     data = load_data(logger, interval="1m")
 
     # Run analyses
-    # # stationary results
+    # # # stationary results
     # stationarity_results = run_stationarity_analysis(data, logger)
     # stationarity_results.to_csv(f"results/{INTERVAL}/stationarity_results.csv")
     # # outlier results
@@ -270,17 +274,20 @@ def main():
     #     f"results/{INTERVAL}/instantaneous_causality_results.csv"
     # )
     # causality_metrics.to_csv(f"results/{INTERVAL}/causality_metrics.csv")
-    # granger causality results
-    granger_causality_results, granger_causality_results_summary = run_granger_causality_analysis(data, logger)
-    granger_causality_results.to_csv(f"results/{INTERVAL}/grangerv2_causality_results.csv")
-    granger_causality_results_summary.to_csv(f"results/{INTERVAL}/grangerv2_causality_metrics.csv")
+    # # granger causality results
+    # granger_causality_results, granger_causality_results_summary = run_granger_causality_analysis(data, logger)
+    # granger_causality_results.to_csv(f"results/{INTERVAL}/grangerv2_causality_results.csv")
+    # granger_causality_results_summary.to_csv(f"results/{INTERVAL}/grangerv2_causality_metrics.csv")
     # # multiple granger results
-    # multiple_granger_causality_results = run_multiple_granger_causality_analysis(data, "BTCUSDT", logger)
-    # print(multiple_granger_causality_results)
-    # multiple_granger_causality_results.to_csv(f"results/{INTERVAL}/multiple_granger_causality_results.csv")
+    multiple_granger_causality_results = run_multiple_granger_causality_analysis(data, logger)
+    for key, value in multiple_granger_causality_results.items():
+        value.to_csv(f"results/{INTERVAL}/{key}_multiple_granger_causality_results.csv")
     # # time varying granger results
-    tv_granger_causality_results = run_tv_granger_causality_analysis(data, logger)
-    tv_granger_causality_results.to_csv(f"results/{INTERVAL}/time_varying_granger_causality_results.csv")
+    # tv_granger_causality_summary, tv_granger_causality_results = run_tv_granger_causality_analysis(data, logger)
+    # tv_granger_causality_summary.to_csv(f"results/{INTERVAL}/time_varying_granger_causality_results.csv")
+    # # unpack results
+    # for key, value in tv_granger_causality_results.items():
+    #     value.to_csv(f"results/{INTERVAL}/{'_'.join(key.split('->'))}_time_varying_granger_causality_results.csv")
 
 
 if __name__ == "__main__":
