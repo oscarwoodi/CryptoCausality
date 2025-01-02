@@ -85,11 +85,7 @@ def load_parquet_data(data_dir: str = None, interval: str = "1m", logger=None) -
     if not all_returns:
         logger.error("No data was loaded!")
         return pd.DataFrame()
-    
-    # save data to df
-    returns_df = pd.DataFrame(all_returns).dropna()
-    data_df = pd.DataFrame(all_data).dropna()
 
-    logger.info(f"Final DataFrame shape: {returns_df.shape}")
-    logger.info(f"Columns: {returns_df.columns.tolist()}")
-    return returns_df, data_df
+    # get first set of values in dictionary
+    logger.info(f"Columns: {list(all_returns.keys())}")
+    return all_returns, all_data

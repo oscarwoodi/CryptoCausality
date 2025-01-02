@@ -26,69 +26,70 @@ from src.analysis.stationarity import StationarityTester
 from src.analysis.outliers import OutlierAnalyzer
 from src.analysis.time_varying_granger import run_tvgc_analysis
 from src.utils.helpers import calculate_returns
+from src.utils.load_data import load_parquet_data
 
 # get variables
 from src.config import (SYMBOLS, INTERVAL, START_DATE, END_DATE,
                       BASE_URL, RAW_DATA_PATH, PROCESSED_DATA_PATH)
 
-def load_data(logger, data_dir: str = None, interval: str = "1m") -> pd.DataFrame:
-    """Initialize analyzer with data directory path."""
-    if data_dir is None:
-        # Get the path relative to the script location
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        data_dir = os.path.join(script_dir, "data", "processed")
-    else:
-        data_dir = data_dir
-    logger.info(f"Initializing analyzer with data directory: {data_dir}")
+# def load_data(logger, data_dir: str = None, interval: str = "1m") -> pd.DataFrame:
+#     """Initialize analyzer with data directory path."""
+#     if data_dir is None:
+#         # Get the path relative to the script location
+#         script_dir = os.path.dirname(os.path.abspath(__file__))
+#         data_dir = os.path.join(script_dir, "data", "processed")
+#     else:
+#         data_dir = data_dir
+#     logger.info(f"Initializing analyzer with data directory: {data_dir}")
 
-    logger.info("Starting data loading process...")
-    all_returns = {}
+#     logger.info("Starting data loading process...")
+#     all_returns = {}
 
-    # Get absolute path for better debugging
-    abs_data_dir = os.path.abspath(data_dir)
-    logger.info(f"Looking for parquet files in: {abs_data_dir}")
+#     # Get absolute path for better debugging
+#     abs_data_dir = os.path.abspath(data_dir)
+#     logger.info(f"Looking for parquet files in: {abs_data_dir}")
 
-    # Check if directory exists
-    if not os.path.exists(abs_data_dir):
-        logger.error(f"Directory does not exist: {abs_data_dir}")
-        return pd.DataFrame()
+#     # Check if directory exists
+#     if not os.path.exists(abs_data_dir):
+#         logger.error(f"Directory does not exist: {abs_data_dir}")
+#         return pd.DataFrame()
 
-    parquet_files = glob.glob(os.path.join(abs_data_dir, "*.parquet"))
-    logger.info(f"Found {len(parquet_files)} parquet files")
-    if len(parquet_files) == 0:
-        logger.info("Contents of directory:")
-        for item in os.listdir(abs_data_dir):
-            logger.info(f"  {item}")
+#     parquet_files = glob.glob(os.path.join(abs_data_dir, "*.parquet"))
+#     logger.info(f"Found {len(parquet_files)} parquet files")
+#     if len(parquet_files) == 0:
+#         logger.info("Contents of directory:")
+#         for item in os.listdir(abs_data_dir):
+#             logger.info(f"  {item}")
 
-    for file in parquet_files:
-        symbol = os.path.basename(file).split("_")[0]
-        time = os.path.basename(file).split("_")[1]
-        logger.info(f"Processing file for {symbol}")
+#     for file in parquet_files:
+#         symbol = os.path.basename(file).split("_")[0]
+#         time = os.path.basename(file).split("_")[1]
+#         logger.info(f"Processing file for {symbol}")
 
-        if time == interval:
-            try:
-                df = pq.read_table(file).to_pandas()
-                logger.info(f"Loaded {len(df)} rows for {symbol}")
+#         if time == interval:
+#             try:
+#                 df = pq.read_table(file).to_pandas()
+#                 logger.info(f"Loaded {len(df)} rows for {symbol}")
 
-                if "log_returns" not in df.columns:
-                    logger.info(f"Calculating log returns for {symbol}")
-                    df["log_returns"] = np.log(df["close"]).diff()  # find log returns
+#                 if "log_returns" not in df.columns:
+#                     logger.info(f"Calculating log returns for {symbol}")
+#                     df["log_returns"] = np.log(df["close"]).diff()  # find log returns
 
-                all_returns[symbol] = df["log_returns"]
-                logger.info(f"Successfully processed {symbol}")
+#                 all_returns[symbol] = df["log_returns"]
+#                 logger.info(f"Successfully processed {symbol}")
 
-            except Exception as e:
-                logger.error(f"Error processing {symbol}: {str(e)}")
-                continue
+#             except Exception as e:
+#                 logger.error(f"Error processing {symbol}: {str(e)}")
+#                 continue
 
-    if not all_returns:
-        logger.error("No data was loaded!")
-        return pd.DataFrame()
+#     if not all_returns:
+#         logger.error("No data was loaded!")
+#         return pd.DataFrame()
 
-    returns_df = pd.DataFrame(all_returns).dropna()
-    logger.info(f"Final DataFrame shape: {returns_df.shape}")
-    logger.info(f"Columns: {returns_df.columns.tolist()}")
-    return returns_df
+#     returns_df = pd.DataFrame(all_returns).dropna()
+#     logger.info(f"Final DataFrame shape: {returns_df.shape}")
+#     logger.info(f"Columns: {returns_df.columns.tolist()}")
+#     return returns_df
 
 
 def run_stationarity_analysis(data: pd.DataFrame, logger) -> None:
@@ -257,17 +258,18 @@ def main():
     logger.info("Starting Granger causality analysis")
 
     # Load data
-    data = load_data(logger, interval="1m")
+    returns, data = load_parquet_data(logger, interval="1m")
+    log_returns = pd.DataFrame({key: returns[key]["log_returns"] for key in returns.keys()}).dropna()
 
     # Run analyses
     # # stationary results
-    stationarity_results = run_stationarity_analysis(data, logger)
+    stationarity_results = run_stationarity_analysis(log_returns, logger)
     stationarity_results.to_csv(f"results/{INTERVAL}/stationarity_results.csv")
     # outlier results
-    outlier_results = run_outlier_analysis(data, logger)
+    outlier_results = run_outlier_analysis(log_returns, logger)
     outlier_results.to_csv(f"results/{INTERVAL}/outlier_results.csv")
     # causality results
-    causality_results, causality_metrics = run_causality_analysis(data, logger)
+    causality_results, causality_metrics = run_causality_analysis(log_returns, logger)
     causality_results["granger"].to_csv(f"results/{INTERVAL}/grangerv1_causality_results.csv")
     causality_results["correlation"].to_csv(f"results/{INTERVAL}/correlation_causality_results.csv")
     causality_results["instantaneous"].to_csv(
@@ -275,15 +277,15 @@ def main():
     )
     causality_metrics.to_csv(f"results/{INTERVAL}/causality_metrics.csv")
     # granger causality results
-    granger_causality_results, granger_causality_results_summary = run_granger_causality_analysis(data, logger)
+    granger_causality_results, granger_causality_results_summary = run_granger_causality_analysis(log_returns, logger)
     granger_causality_results.to_csv(f"results/{INTERVAL}/grangerv2_causality_results.csv")
     granger_causality_results_summary.to_csv(f"results/{INTERVAL}/grangerv2_causality_metrics.csv")
     # multiple granger results
-    multiple_granger_causality_results = run_multiple_granger_causality_analysis(data, logger)
+    multiple_granger_causality_results = run_multiple_granger_causality_analysis(log_returns, logger)
     for key, value in multiple_granger_causality_results.items():
         value.to_csv(f"results/{INTERVAL}/{key}_multiple_granger_causality_results.csv")
     # time varying granger results
-    tv_granger_causality_summary, tv_granger_causality_results = run_tv_granger_causality_analysis(data, logger)
+    tv_granger_causality_summary, tv_granger_causality_results = run_tv_granger_causality_analysis(log_returns, logger)
     tv_granger_causality_summary.to_csv(f"results/{INTERVAL}/time_varying_granger_causality_results.csv")
     # unpack results
     for key, value in tv_granger_causality_results.items():
