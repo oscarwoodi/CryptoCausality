@@ -260,34 +260,34 @@ def main():
     data = load_data(logger, interval="1m")
 
     # Run analyses
-    # # # stationary results
-    # stationarity_results = run_stationarity_analysis(data, logger)
-    # stationarity_results.to_csv(f"results/{INTERVAL}/stationarity_results.csv")
-    # # outlier results
-    # outlier_results = run_outlier_analysis(data, logger)
-    # outlier_results.to_csv(f"results/{INTERVAL}/outlier_results.csv")
-    # # causality results
-    # causality_results, causality_metrics = run_causality_analysis(data, logger)
-    # causality_results["granger"].to_csv(f"results/{INTERVAL}/grangerv1_causality_results.csv")
-    # causality_results["correlation"].to_csv(f"results/{INTERVAL}/correlation_causality_results.csv")
-    # causality_results["instantaneous"].to_csv(
-    #     f"results/{INTERVAL}/instantaneous_causality_results.csv"
-    # )
-    # causality_metrics.to_csv(f"results/{INTERVAL}/causality_metrics.csv")
-    # # granger causality results
-    # granger_causality_results, granger_causality_results_summary = run_granger_causality_analysis(data, logger)
-    # granger_causality_results.to_csv(f"results/{INTERVAL}/grangerv2_causality_results.csv")
-    # granger_causality_results_summary.to_csv(f"results/{INTERVAL}/grangerv2_causality_metrics.csv")
-    # # multiple granger results
+    # # stationary results
+    stationarity_results = run_stationarity_analysis(data, logger)
+    stationarity_results.to_csv(f"results/{INTERVAL}/stationarity_results.csv")
+    # outlier results
+    outlier_results = run_outlier_analysis(data, logger)
+    outlier_results.to_csv(f"results/{INTERVAL}/outlier_results.csv")
+    # causality results
+    causality_results, causality_metrics = run_causality_analysis(data, logger)
+    causality_results["granger"].to_csv(f"results/{INTERVAL}/grangerv1_causality_results.csv")
+    causality_results["correlation"].to_csv(f"results/{INTERVAL}/correlation_causality_results.csv")
+    causality_results["instantaneous"].to_csv(
+        f"results/{INTERVAL}/instantaneous_causality_results.csv"
+    )
+    causality_metrics.to_csv(f"results/{INTERVAL}/causality_metrics.csv")
+    # granger causality results
+    granger_causality_results, granger_causality_results_summary = run_granger_causality_analysis(data, logger)
+    granger_causality_results.to_csv(f"results/{INTERVAL}/grangerv2_causality_results.csv")
+    granger_causality_results_summary.to_csv(f"results/{INTERVAL}/grangerv2_causality_metrics.csv")
+    # multiple granger results
     multiple_granger_causality_results = run_multiple_granger_causality_analysis(data, logger)
     for key, value in multiple_granger_causality_results.items():
         value.to_csv(f"results/{INTERVAL}/{key}_multiple_granger_causality_results.csv")
-    # # time varying granger results
-    # tv_granger_causality_summary, tv_granger_causality_results = run_tv_granger_causality_analysis(data, logger)
-    # tv_granger_causality_summary.to_csv(f"results/{INTERVAL}/time_varying_granger_causality_results.csv")
-    # # unpack results
-    # for key, value in tv_granger_causality_results.items():
-    #     value.to_csv(f"results/{INTERVAL}/{'_'.join(key.split('->'))}_time_varying_granger_causality_results.csv")
+    # time varying granger results
+    tv_granger_causality_summary, tv_granger_causality_results = run_tv_granger_causality_analysis(data, logger)
+    tv_granger_causality_summary.to_csv(f"results/{INTERVAL}/time_varying_granger_causality_results.csv")
+    # unpack results
+    for key, value in tv_granger_causality_results.items():
+        value.to_csv(f"results/{INTERVAL}/{'_'.join(key.split('->'))}_time_varying_granger_causality_results.csv")
 
 
 if __name__ == "__main__":
