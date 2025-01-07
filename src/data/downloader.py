@@ -1,6 +1,6 @@
 # src/data/downloader.py
 
-from binance.client import Client
+from binance import Client
 from datetime import datetime, timedelta
 import pandas as pd
 import pyarrow as pa
