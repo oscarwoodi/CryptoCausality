@@ -10,11 +10,11 @@ sys.path.append(os.path.dirname(os.path.abspath('')))
 from src.utils.load_data import load_parquet_data
 
 
-def save_checkpoint(result_dict, filename="checkpoint.pkl"):
+def save_checkpoint(result_dict, filename="data/checkpoints/rmc_checkpoint.pkl"):
     with open(filename, "wb") as f:
         pickle.dump(result_dict, f)
 
-def load_checkpoint(filename="checkpoint.pkl"):
+def load_checkpoint(filename="data/checkpoints/rmc_checkpoint.pkl"):
     if os.path.exists(filename):
         with open(filename, "rb") as f:
             return pickle.load(f)
@@ -26,7 +26,7 @@ def rolling_multivariate_causality_v2(
     max_lags: int,
     sig_level: float = 0.05,
     checkpoint_interval: int = 100,
-    checkpoint_file: str = "checkpoint.pkl"
+    checkpoint_file: str = "data/checkpoints/rmc_checkpoint.pkl"
 ) -> dict:
     """
     Run rolling multivariate Granger causality analysis using VAR model for all tokens!
@@ -71,9 +71,8 @@ def rolling_multivariate_causality_v2(
     # Load checkpoint if available
     checkpoint = load_checkpoint(checkpoint_file)
     if checkpoint:
-        None
-        # result_dict = checkpoint
-        # start_index = max(result_dict['lag_order'].dropna().index) + 1
+        result_dict = checkpoint
+        start_index = max(result_dict['lag_order'].dropna().index) + 1
     else:
         start_index = 0
 
@@ -141,7 +140,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_lags", type=int, default=30, help="Maximum number of lags for the VAR model.")
     parser.add_argument("--sig_level", type=float, default=0.05, help="Significance level for p-values.")
     parser.add_argument("--checkpoint_interval", type=int, default=100, help="Interval at which to save checkpoints.")
-    parser.add_argument("--checkpoint_file", type=str, default="checkpoint.pkl", help="File to save checkpoints.")
+    parser.add_argument("--checkpoint_file", type=str, default="data/checkpoints/rmc_checkpoint.pkl", help="File to save checkpoints.")
     parser.add_argument("--interval", type=str, default="1m", help="Interval for the data.")
 
     args = parser.parse_args()
@@ -169,5 +168,5 @@ if __name__ == "__main__":
     print(result_dict)
 
     # Save final results
-    with open("final_results.pkl", "wb") as f:
+    with open("data/checkpoints/rmv_final_results.pkl", "wb") as f:
         pickle.dump(result_dict, f)
