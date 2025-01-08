@@ -30,9 +30,9 @@ SYMBOLS = ['BTCUSDT',
 #            ]
 
 # Time parameters
-INTERVAL = '1m'  # Data granularity
-START_DATE = '2024-06-01'
-END_DATE = '2025-01-01'
+INTERVAL = '1h'  # Data granularity
+START_DATE = '2024-01-01'
+END_DATE = '2024-12-01'
 
 # API configuration
 BASE_URL = 'https://api.binance.com'
