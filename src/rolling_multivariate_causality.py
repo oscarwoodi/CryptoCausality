@@ -146,12 +146,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run rolling multivariate Granger causality analysis.")
     parser.add_argument("--data_file", type=str, default="../data/processed/", help="Path to the input data file (CSV format).")
     parser.add_argument("--window_size", type=int, default=300, help="Size of the rolling window.")
-    parser.add_argument("--max_lags", type=int, default=30, help="Maximum number of lags for the VAR model.")
+    parser.add_argument("--max_lags", type=int, default=10, help="Maximum number of lags for the VAR model.")
     parser.add_argument("--sig_level", type=float, default=0.05, help="Significance level for p-values.")
     parser.add_argument("--checkpoint_interval", type=int, default=100, help="Interval at which to save checkpoints.")
     parser.add_argument("--checkpoint_file", type=str, default="data/checkpoints/checkpoint.pkl", help="File to save checkpoints.")
     parser.add_argument("--interval", type=str, default="1m", help="Interval for the data.")
-    parser.add_argument("--fit_freq", type=int, default=1, help="Interval for the data.")
+    parser.add_argument("--fit_freq", type=int, default=5, help="Interval for the data.")
 
     args = parser.parse_args()
 
@@ -163,7 +163,7 @@ if __name__ == "__main__":
 
     # Run analysis
     result_dict = rolling_multivariate_causality_v2(
-        log_returns[-400:],
+        log_returns[-1000:],
         window_size=args.window_size,
         max_lags=args.max_lags,
         sig_level=args.sig_level,
