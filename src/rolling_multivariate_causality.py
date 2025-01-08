@@ -72,7 +72,7 @@ def rolling_multivariate_causality_v2(
     checkpoint = load_checkpoint(checkpoint_file)
     if checkpoint:
         result_dict = checkpoint
-        start_index = max(result_dict['lag_order'].dropna().index) + 1
+        start_index = data.index.get_loc(result_dict['lag_order'].dropna().index[-1]) + 1
     else:
         start_index = 0
 
@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
     # Run analysis
     result_dict = rolling_multivariate_causality_v2(
-        log_returns[-302:],
+        log_returns,
         window_size=args.window_size,
         max_lags=args.max_lags,
         sig_level=args.sig_level,
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     )
 
     # print final results
-    print(result_dict)
+    # print(result_dict)
 
     # Save final results
     with open("data/checkpoints/rmv_final_results.pkl", "wb") as f:
