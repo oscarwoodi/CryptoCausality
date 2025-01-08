@@ -1,13 +1,13 @@
 # src/data/downloader.py
 
-from binance.client import Client
+from binance import Client
 from datetime import datetime, timedelta
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import os
 from typing import List, Optional
-from ..config import (SYMBOLS, INTERVAL, START_DATE, END_DATE,
+from config import (SYMBOLS, INTERVAL, START_DATE, END_DATE,
                       BASE_URL, RAW_DATA_PATH, PROCESSED_DATA_PATH)
 
 

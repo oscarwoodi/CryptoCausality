@@ -24,6 +24,11 @@ SYMBOLS = ['BTCUSDT',
            'DOGEUSDT'
            ]
 
+# SYMBOLS = ['BTCUSDT',
+#            'ETHUSDT',
+#            'BNBUSDT',
+#            ]
+
 # Time parameters
 INTERVAL = '1h'  # Data granularity
 START_DATE = '2024-01-01'
