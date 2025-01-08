@@ -10,11 +10,11 @@ sys.path.append(os.path.dirname(os.path.abspath('')))
 from src.utils.load_data import load_parquet_data
 
 
-def save_checkpoint(result_dict, filename="data/checkpoints/rmc_checkpoint.pkl"):
+def save_checkpoint(result_dict, filename="data/checkpoints/checkpoint.pkl"):
     with open(filename, "wb") as f:
         pickle.dump(result_dict, f)
 
-def load_checkpoint(filename="data/checkpoints/rmc_checkpoint.pkl"):
+def load_checkpoint(filename="data/checkpoints/checkpoint.pkl"):
     if os.path.exists(filename):
         with open(filename, "rb") as f:
             return pickle.load(f)
@@ -26,7 +26,8 @@ def rolling_multivariate_causality_v2(
     max_lags: int,
     sig_level: float = 0.05,
     checkpoint_interval: int = 100,
-    checkpoint_file: str = "data/checkpoints/rmc_checkpoint.pkl"
+    checkpoint_file: str = "data/checkpoints/checkpoint.pkl",
+    fit_freq: int = 1
 ) -> dict:
     """
     Run rolling multivariate Granger causality analysis using VAR model for all tokens!
@@ -58,9 +59,6 @@ def rolling_multivariate_causality_v2(
     # Prepare data
     data = returns_data.dropna()
 
-    # Ensure the data index is a datetime index
-    data.index = pd.to_datetime(data.index)
-
     # Initialize result data structures
     stat_results = pd.DataFrame(columns=["f_stat", "p_value", "significant"], index=data.index)
     predictions = pd.DataFrame(columns=["pred", "significant_tokens"], index=data.index)
@@ -78,7 +76,7 @@ def rolling_multivariate_causality_v2(
 
     def process_window(start):
         logger.info(
-            f"Running multivariate causality analysis for timestep {start}/{len(data) - window_size + 1}..."
+            f"Fitting model for timestep {start}/{len(data) - window_size + 1}..."
         )
 
         date = data.index[start + window_size - 1]
@@ -90,31 +88,42 @@ def rolling_multivariate_causality_v2(
 
         # Predict next timestep
         lag_order = results.k_ar
-        result_dict['lag_order'].loc[date] = lag_order
         
         if lag_order == 0:
             return
         else: 
-            prediction = results.forecast(window_data.values[-lag_order:], 1)
+            for i in range(0, fit_freq):
+                logger.info(
+                    f"Getting Prediction for timestep {start+i}/{len(data) - window_size + 1}..."
+                        )
 
-            for idx, target in enumerate(data.columns):
-                other_tokens = [token for token in data.columns if token != target]
+                # get new data window
+                date = data.index[start + window_size - 1 + i]
+                window_data = data.iloc[start + i: start + window_size + i]
+                prediction = results.forecast(window_data.values[-lag_order:], 1)
 
-                # get predictions 
-                result_dict[target]['preds'].loc[date, "pred"] = prediction[0][idx]  # select result only for target variable
+                # save lag order
+                result_dict['lag_order'].loc[date] = lag_order
 
-                # find significant tokens
-                causal_tokens = []
-                for cause in other_tokens: 
-                    # Use F-test or Chi-square test statistic
-                    if results.test_causality(target, [cause], kind="f").test_statistic < sig_level:
-                        causal_tokens.append(cause)
-                result_dict[target]['preds'].loc[date, "significant_tokens"] = causal_tokens
+                # save results for each token
+                for idx, target in enumerate(data.columns):
+                    other_tokens = [token for token in data.columns if token != target]
 
-                # get test statistics and p-values for target variable overall
-                f_stat = results.test_causality(target, other_tokens, kind="f").test_statistic
-                p_value = results.test_causality(target, other_tokens, kind="f").pvalue
-                result_dict[target]['stats'].loc[date] = [f_stat, p_value, p_value < 0.05]
+                    # get predictions 
+                    result_dict[target]['preds'].loc[date, "pred"] = prediction[0][idx]  # select result only for target variable
+
+                    # find significant tokens
+                    causal_tokens = []
+                    for cause in other_tokens: 
+                        # Use F-test or Chi-square test statistic
+                        if results.test_causality(target, [cause], kind="f").test_statistic < sig_level:
+                            causal_tokens.append(cause)
+                    result_dict[target]['preds'].loc[date, "significant_tokens"] = causal_tokens
+
+                    # get test statistics and p-values for target variable overall
+                    f_stat = results.test_causality(target, other_tokens, kind="f").test_statistic
+                    p_value = results.test_causality(target, other_tokens, kind="f").pvalue
+                    result_dict[target]['stats'].loc[date] = [f_stat, p_value, p_value < 0.05]
 
         # Save checkpoint at regular intervals
         if start % checkpoint_interval == 0:
@@ -123,7 +132,7 @@ def rolling_multivariate_causality_v2(
 
     # Use ThreadPoolExecutor to parallelize the rolling window analysis
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor.map(process_window, range(start_index, len(data) - window_size + 1))
+        executor.map(process_window, range(start_index, len(data) - window_size + 1, fit_freq))
 
     # Save final results
     save_checkpoint(result_dict, checkpoint_file)
@@ -137,36 +146,35 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run rolling multivariate Granger causality analysis.")
     parser.add_argument("--data_file", type=str, default="../data/processed/", help="Path to the input data file (CSV format).")
     parser.add_argument("--window_size", type=int, default=300, help="Size of the rolling window.")
-    parser.add_argument("--max_lags", type=int, default=30, help="Maximum number of lags for the VAR model.")
+    parser.add_argument("--max_lags", type=int, default=10, help="Maximum number of lags for the VAR model.")
     parser.add_argument("--sig_level", type=float, default=0.05, help="Significance level for p-values.")
     parser.add_argument("--checkpoint_interval", type=int, default=100, help="Interval at which to save checkpoints.")
-    parser.add_argument("--checkpoint_file", type=str, default="data/checkpoints/rmc_checkpoint.pkl", help="File to save checkpoints.")
+    parser.add_argument("--checkpoint_file", type=str, default="data/checkpoints/checkpoint.pkl", help="File to save checkpoints.")
     parser.add_argument("--interval", type=str, default="1m", help="Interval for the data.")
+    parser.add_argument("--fit_freq", type=int, default=5, help="Interval for the data.")
 
     args = parser.parse_args()
 
     # Example usage:
-    # python rolling_multivariate_causality.py data/processed/ --window_size 300 --max_lags 30 --sig_level 0.05 --checkpoint_interval 100 --checkpoint_file checkpoint.pkl --interval 1m
+    # python rolling_multivariate_causality.py data/processed/ --data_file "../data/processed/ --window_size 300 --max_lags 30 --sig_level 0.05 --checkpoint_interval 100 --checkpoint_file checkpoint.pkl --interval 1m  --fit_freq 1
 
     returns, prices = load_parquet_data(data_dir=args.data_file, interval=args.interval)
     log_returns = pd.DataFrame({key: returns[key].set_index('timestamp')["log_returns"] for key in returns.keys()}).dropna()
 
-    # Ensure the data index is a datetime index
-    log_returns.index = pd.to_datetime(log_returns.index)
-
     # Run analysis
     result_dict = rolling_multivariate_causality_v2(
-        log_returns,
+        log_returns[-1000:],
         window_size=args.window_size,
         max_lags=args.max_lags,
         sig_level=args.sig_level,
         checkpoint_interval=args.checkpoint_interval,
-        checkpoint_file=args.checkpoint_file
+        checkpoint_file=args.checkpoint_file,
+        fit_freq=args.fit_freq
     )
 
     # print final results
-    # print(result_dict)
+    print(result_dict)
 
     # Save final results
-    with open("data/checkpoints/rmv_final_results.pkl", "wb") as f:
+    with open("data/checkpoints/1m_final_results.pkl", "wb") as f:
         pickle.dump(result_dict, f)
