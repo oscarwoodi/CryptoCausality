@@ -9,7 +9,7 @@ import os
 from typing import List, Optional
 from config import (SYMBOLS, INTERVAL, START_DATE, END_DATE,
                       BASE_URL, RAW_DATA_PATH, PROCESSED_DATA_PATH)
-
+import concurrent.futures
 
 class CryptoDataDownloader:
     def __init__(self):
@@ -81,7 +81,7 @@ class CryptoDataDownloader:
         start_dt = datetime.strptime(start_date, "%Y-%m-%d")
         end_dt = datetime.strptime(end_date, "%Y-%m-%d")
 
-        for symbol in symbols:
+        def process_symbol(symbol):
             print(f"Downloading data for {symbol}...")
             df = self.download_symbol_data(symbol, interval, start_dt, end_dt)
 
@@ -94,6 +94,9 @@ class CryptoDataDownloader:
             )
             print(f"Saved {symbol} data to parquet")
 
+        # Use ThreadPoolExecutor to parallelize the download process
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(process_symbol, symbols)
 
 if __name__ == "__main__":
     downloader = CryptoDataDownloader()
