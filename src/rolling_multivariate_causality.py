@@ -90,6 +90,15 @@ def rolling_multivariate_causality_v2(
         lag_order = results.k_ar
         
         if lag_order == 0:
+            for i in range(0, fit_freq):
+                logger.info(
+                    f"No relevant lags for timestep {start+i}/{len(data) - window_size + 1}..."
+                        )
+                # get new data window
+                date = data.index[start + window_size - 1 + i]
+                # save lag order
+                result_dict['lag_order'].loc[date] = lag_order
+
             return
         else: 
             for i in range(0, fit_freq):
@@ -151,7 +160,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_interval", type=int, default=100, help="Interval at which to save checkpoints.")
     parser.add_argument("--checkpoint_file", type=str, default="data/checkpoints/checkpoint.pkl", help="File to save checkpoints.")
     parser.add_argument("--interval", type=str, default="1m", help="Interval for the data.")
-    parser.add_argument("--fit_freq", type=int, default=5, help="Interval for the data.")
+    parser.add_argument("--fit_freq", type=int, default=1, help="Interval for the data.")
 
     args = parser.parse_args()
 
@@ -163,7 +172,7 @@ if __name__ == "__main__":
 
     # Run analysis
     result_dict = rolling_multivariate_causality_v2(
-        log_returns[-1000:],
+        log_returns[-400:],
         window_size=args.window_size,
         max_lags=args.max_lags,
         sig_level=args.sig_level,
