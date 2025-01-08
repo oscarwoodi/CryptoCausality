@@ -90,7 +90,7 @@ def rolling_multivariate_causality_v2(
         lag_order = results.k_ar
         
         if lag_order == 0:
-            return
+            return 
         else: 
             for i in range(0, fit_freq):
                 logger.info(
@@ -163,7 +163,7 @@ if __name__ == "__main__":
 
     # Run analysis
     result_dict = rolling_multivariate_causality_v2(
-        log_returns[-1000:],
+        log_returns,
         window_size=args.window_size,
         max_lags=args.max_lags,
         sig_level=args.sig_level,
@@ -176,5 +176,5 @@ if __name__ == "__main__":
     print(result_dict)
 
     # Save final results
-    with open("data/checkpoints/1m_final_results.pkl", "wb") as f:
+    with open("data/checkpoints/1h_final_results.pkl", "wb") as f:
         pickle.dump(result_dict, f)
