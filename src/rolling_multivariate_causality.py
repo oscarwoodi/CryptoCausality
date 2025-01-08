@@ -58,6 +58,9 @@ def rolling_multivariate_causality_v2(
     # Prepare data
     data = returns_data.dropna()
 
+    # Ensure the data index is a datetime index
+    data.index = pd.to_datetime(data.index)
+
     # Initialize result data structures
     stat_results = pd.DataFrame(columns=["f_stat", "p_value", "significant"], index=data.index)
     predictions = pd.DataFrame(columns=["pred", "significant_tokens"], index=data.index)
@@ -68,8 +71,9 @@ def rolling_multivariate_causality_v2(
     # Load checkpoint if available
     checkpoint = load_checkpoint(checkpoint_file)
     if checkpoint:
-        result_dict = checkpoint
-        start_index = max(result_dict['lag_order'].dropna().index) + 1
+        None
+        # result_dict = checkpoint
+        # start_index = max(result_dict['lag_order'].dropna().index) + 1
     else:
         start_index = 0
 
@@ -94,24 +98,24 @@ def rolling_multivariate_causality_v2(
         else: 
             prediction = results.forecast(window_data.values[-lag_order:], 1)
 
-        for idx, target in enumerate(data.columns):
-            other_tokens = [token for token in data.columns if token != target]
+            for idx, target in enumerate(data.columns):
+                other_tokens = [token for token in data.columns if token != target]
 
-            # get predictions 
-            result_dict[target]['preds'].loc[date, "pred"] = prediction[0][idx]  # select result only for target variable
+                # get predictions 
+                result_dict[target]['preds'].loc[date, "pred"] = prediction[0][idx]  # select result only for target variable
 
-            # find significant tokens
-            causal_tokens = []
-            for cause in other_tokens: 
-                # Use F-test or Chi-square test statistic
-                if results.test_causality(target, [cause], kind="f").test_statistic < sig_level:
-                    causal_tokens.append(cause)
-            result_dict[target]['preds'].loc[date, "significant_tokens"] = causal_tokens
+                # find significant tokens
+                causal_tokens = []
+                for cause in other_tokens: 
+                    # Use F-test or Chi-square test statistic
+                    if results.test_causality(target, [cause], kind="f").test_statistic < sig_level:
+                        causal_tokens.append(cause)
+                result_dict[target]['preds'].loc[date, "significant_tokens"] = causal_tokens
 
-            # get test statistics and p-values for target variable overall
-            f_stat = results.test_causality(target, other_tokens, kind="f").test_statistic
-            p_value = results.test_causality(target, other_tokens, kind="f").pvalue
-            result_dict[target]['stats'].loc[date] = [f_stat, p_value, p_value < 0.05]
+                # get test statistics and p-values for target variable overall
+                f_stat = results.test_causality(target, other_tokens, kind="f").test_statistic
+                p_value = results.test_causality(target, other_tokens, kind="f").pvalue
+                result_dict[target]['stats'].loc[date] = [f_stat, p_value, p_value < 0.05]
 
         # Save checkpoint at regular intervals
         if start % checkpoint_interval == 0:
@@ -132,7 +136,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Run rolling multivariate Granger causality analysis.")
-    parser.add_argument("--data_file", type=str, default="data/processed/", help="Path to the input data file (CSV format).")
+    parser.add_argument("--data_file", type=str, default="../data/processed/", help="Path to the input data file (CSV format).")
     parser.add_argument("--window_size", type=int, default=300, help="Size of the rolling window.")
     parser.add_argument("--max_lags", type=int, default=30, help="Maximum number of lags for the VAR model.")
     parser.add_argument("--sig_level", type=float, default=0.05, help="Significance level for p-values.")
@@ -146,19 +150,23 @@ if __name__ == "__main__":
     # python rolling_multivariate_causality.py data/processed/ --window_size 300 --max_lags 30 --sig_level 0.05 --checkpoint_interval 100 --checkpoint_file checkpoint.pkl --interval 1m
 
     returns, prices = load_parquet_data(data_dir=args.data_file, interval=args.interval)
-    log_returns = pd.DataFrame({key: returns[key]["log_returns"] for key in returns.keys()}).dropna()
-    # Load data
-    data = pd.read_csv(args.data_file, index_col=0, parse_dates=True)
+    log_returns = pd.DataFrame({key: returns[key].set_index('timestamp')["log_returns"] for key in returns.keys()}).dropna()
+
+    # Ensure the data index is a datetime index
+    log_returns.index = pd.to_datetime(log_returns.index)
 
     # Run analysis
     result_dict = rolling_multivariate_causality_v2(
-        data,
+        log_returns[-302:],
         window_size=args.window_size,
         max_lags=args.max_lags,
         sig_level=args.sig_level,
         checkpoint_interval=args.checkpoint_interval,
         checkpoint_file=args.checkpoint_file
     )
+
+    # print final results
+    print(result_dict)
 
     # Save final results
     with open("final_results.pkl", "wb") as f:
