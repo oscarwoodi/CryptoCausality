@@ -55,6 +55,3 @@ venv.bak/
 .vscode/
 *.sublime-project
 *.sublime-workspace
-
-# Data files
-*.parquet
