@@ -184,7 +184,7 @@ if __name__ == "__main__":
 
     # Run analysis
     result_dict = rolling_multivariate_causality_v2(
-        log_returns[160000:],
+        log_returns,
         window_size=args.window_size,
         max_lags=args.max_lags,
         sig_level=args.sig_level,
